@@ -8,11 +8,9 @@ class MyWidget(QMainWindow):
         super().__init__()
         self.setWindowTitle("Pomoc SCRUM")
 
-        # Połączenie z bazą danych SQLite
         self.conn = sqlite3.connect("tasks.db")
         self.cur = self.conn.cursor()
 
-        # Tworzenie tabeli tasks, jeśli nie istnieje
         self.cur.execute('''CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, name TEXT, project TEXT)''')
         self.conn.commit()
 
@@ -50,7 +48,6 @@ class MyWidget(QMainWindow):
         self.layout.addWidget(self.lista_zadan)
         self.layout.addWidget(self.usun_zadanie_przycisk)
 
-        # Wczytaj projekty z bazy danych i dodaj je do listy
         self.wczytaj_projekty()
 
     def dodaj_projekt(self):
@@ -68,7 +65,7 @@ class MyWidget(QMainWindow):
             zadanie_do_dodania = f"{zadanie_nazwa} - {projekt}"  # Dodanie separatora między zadaniem a projektem
             self.cur.execute('''INSERT INTO tasks (name, project) VALUES (?, ?)''', (zadanie_do_dodania, projekt))
             self.conn.commit()
-            self.wczytaj_zadania()  # Odśwież listę zadań
+            self.wczytaj_zadania()
             self.dodawanie_zadania.clear()
         else:
             QMessageBox.warning(self, "Błąd", "Nazwa zadania nie może być pusta")
@@ -87,7 +84,7 @@ class MyWidget(QMainWindow):
                 self.cur.execute('''DELETE FROM tasks WHERE name = ? AND project IS NULL''', (zadanie_nazwa,))
 
             self.conn.commit()
-            self.wczytaj_zadania()  # Odśwież listę zadań
+            self.wczytaj_zadania()
         else:
             QMessageBox.warning(self, "Błąd", "Wybierz zadanie do usunięcia")
 
