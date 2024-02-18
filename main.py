@@ -2,24 +2,39 @@ import sys
 import sqlite3
 
 from PySide6 import QtGui, QtCore
-from PySide6.QtWidgets import QMainWindow, QWidget, QApplication, QVBoxLayout, QLineEdit, QPushButton, QListWidget, QMessageBox, QHBoxLayout, QLabel, QComboBox, QListWidgetItem, QRadioButton, QButtonGroup
+from PySide6.QtWidgets import QMainWindow, QWidget, QApplication, QVBoxLayout, QLineEdit, QPushButton, QListWidget, QMessageBox, QHBoxLayout, QLabel, QComboBox, QListWidgetItem, QRadioButton, QButtonGroup, QDateEdit, QTabWidget, QTableWidgetItem, QTableWidget
 
 class MyWidget(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Pomoc SCRUM")
 
-        self.conn = sqlite3.connect("tasks.db")
-        self.cur = self.conn.cursor()
+        self.conn_tasks = sqlite3.connect("tasks.db")
+        self.cur_tasks = self.conn_tasks.cursor()
 
-        self.cur.execute('''CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, name TEXT, project TEXT, status TEXT)''')
-        self.conn.commit()
+        self.conn_employees = sqlite3.connect("employees.db")
+        self.cur_employees = self.conn_employees.cursor()
 
-        self.central_widget = QWidget()
+        self.cur_tasks.execute('''CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, name TEXT, project TEXT, status TEXT, poker_points INTEGER)''')
+        self.conn_tasks.commit()
+
+        self.cur_employees.execute('''CREATE TABLE IF NOT EXISTS employees (id INTEGER PRIMARY KEY, imie TEXT, nazwisko TEXT)''')
+        self.conn_employees.commit()
+
+        self.central_widget = QTabWidget()
         self.setCentralWidget(self.central_widget)
 
-        self.layout = QVBoxLayout()
-        self.central_widget.setLayout(self.layout)
+        self.tab1 = QWidget()
+        self.tab2 = QWidget()
+
+        self.central_widget.addTab(self.tab1, "Zadania")
+        self.central_widget.addTab(self.tab2, "Zarządzanie pracownikami")
+
+        self.layout1 = QVBoxLayout()
+        self.tab1.setLayout(self.layout1)
+
+        self.layout2 = QVBoxLayout()
+        self.tab2.setLayout(self.layout2)
 
         self.dodawanie_projektu = QLineEdit(placeholderText="Dodaj nowy projekt...")
         self.dodaj_projekt_przycisk = QPushButton("Dodaj projekt")
@@ -49,76 +64,82 @@ class MyWidget(QMainWindow):
         self.status_layout.addWidget(self.status_label)
         self.status_layout.addWidget(self.status_combobox)
 
-        self.layout.addWidget(self.dodawanie_projektu)
-        self.layout.addWidget(self.dodaj_projekt_przycisk)
-        self.layout.addLayout(self.projekt_layout)
-        self.layout.addWidget(self.dodawanie_zadania)
-        self.layout.addWidget(self.dodaj_zadanie_przycisk)
-        self.layout.addWidget(self.lista_zadan)
-        self.layout.addWidget(self.usun_zadanie_przycisk)
-        self.layout.addLayout(self.status_layout)
+        self.layout1.addWidget(self.dodawanie_projektu)
+        self.layout1.addWidget(self.dodaj_projekt_przycisk)
+        self.layout1.addLayout(self.projekt_layout)
+        self.layout1.addWidget(self.dodawanie_zadania)
+        self.layout1.addWidget(self.dodaj_zadanie_przycisk)
+        self.layout1.addWidget(self.lista_zadan)
+        self.layout1.addWidget(self.usun_zadanie_przycisk)
+        self.layout1.addLayout(self.status_layout)
 
+        # Przyciski do pokera
         self.poker_planning_label = QLabel("Poker Planning:")
         self.poker_planning_edit = QLineEdit()
         self.poker_planning_layout = QHBoxLayout()
         self.poker_planning_layout.addWidget(self.poker_planning_label)
         self.poker_planning_layout.addWidget(self.poker_planning_edit)
 
-
         self.poker_points_group = QButtonGroup()
 
-        self.zero_points_button = QRadioButton("0")
-        self.poker_points_group.addButton(self.zero_points_button, 0)
+        points_buttons = ["0", "0.5", "1", "2", "3", "5", "8", "13", "20", "40", "100"]
+        for points in points_buttons:
+            button = QRadioButton(points)
+            self.poker_points_group.addButton(button)
+            self.poker_planning_layout.addWidget(button)
 
-        self.half_point_button = QRadioButton("0.5")
-        self.poker_points_group.addButton(self.half_point_button, 0.5)
-
-        self.one_point_button = QRadioButton("1")
-        self.poker_points_group.addButton(self.one_point_button, 1)
-
-        self.two_points_button = QRadioButton("2")
-        self.poker_points_group.addButton(self.two_points_button, 2)
-
-        self.three_points_button = QRadioButton("3")
-        self.poker_points_group.addButton(self.three_points_button, 3)
-
-        self.five_points_button = QRadioButton("5")
-        self.poker_points_group.addButton(self.five_points_button, 5)
-
-        self.eight_points_button = QRadioButton("8")
-        self.poker_points_group.addButton(self.eight_points_button, 8)
-
-        self.thirteen_points_button = QRadioButton("13")
-        self.poker_points_group.addButton(self.thirteen_points_button, 13)
-
-        self.twenty_points_button = QRadioButton("20")
-        self.poker_points_group.addButton(self.twenty_points_button, 20)
-
-        self.forty_points_button = QRadioButton("40")
-        self.poker_points_group.addButton(self.forty_points_button, 40)
-
-        self.one_hundred_points_button = QRadioButton("100")
-        self.poker_points_group.addButton(self.one_hundred_points_button, 100)
-
-        self.poker_points_layout = QHBoxLayout()
-
-        self.poker_points_layout.addWidget(self.zero_points_button)
-        self.poker_points_layout.addWidget(self.half_point_button)
-        self.poker_points_layout.addWidget(self.one_point_button)
-        self.poker_points_layout.addWidget(self.two_points_button)
-        self.poker_points_layout.addWidget(self.three_points_button)
-        self.poker_points_layout.addWidget(self.five_points_button)
-        self.poker_points_layout.addWidget(self.eight_points_button)
-        self.poker_points_layout.addWidget(self.thirteen_points_button)
-        self.poker_points_layout.addWidget(self.twenty_points_button)
-        self.poker_points_layout.addWidget(self.forty_points_button)
-        self.poker_points_layout.addWidget(self.one_hundred_points_button)
-
-        self.layout.addLayout(self.poker_points_layout)
-
+        self.layout1.addLayout(self.poker_planning_layout)
         self.poker_points_group.buttonClicked.connect(self.handle_poker_points)
 
+        # Zarządzanie pracownikami
+        self.lista_pracownikow = QTableWidget()
+        self.lista_pracownikow.setColumnCount(3)
+        self.lista_pracownikow.setHorizontalHeaderLabels(["ID", "Imię", "Nazwisko"])
+        self.wczytaj_pracownikow()
+
+        self.layout2.addWidget(self.lista_pracownikow)
+
+        self.imie_input = QLineEdit()
+        self.nazwisko_input = QLineEdit()
+        dodaj_pracownika_przycisk = QPushButton("Dodaj pracownika")
+        dodaj_pracownika_przycisk.clicked.connect(self.dodaj_pracownika)
+
+        self.usun_pracownika_przycisk = QPushButton("Usuń pracownika")
+        self.usun_pracownika_przycisk.clicked.connect(self.usun_pracownika)
+
+        self.layout2.addWidget(self.imie_input)
+        self.layout2.addWidget(self.nazwisko_input)
+        self.layout2.addWidget(dodaj_pracownika_przycisk)
+        self.layout2.addWidget(self.usun_pracownika_przycisk)
+
+        # Generowanie raportu
+        self.generuj_raport_button = QPushButton("Generuj raport")
+        self.generuj_raport_button.clicked.connect(self.generuj_raport)
+
+        # Pola wyboru pracownika i zakresu dat
+        self.pracownik_label_raport = QLabel("Pracownik:")
+        self.pracownik_combobox_raport = QComboBox()
+        self.data_poczatkowa_label = QLabel("Data początkowa:")
+        self.data_poczatkowa = QDateEdit()
+        self.data_koncowa_label = QLabel("Data końcowa:")
+        self.data_koncowa = QDateEdit()
+
+        # Układ dla pól wyboru pracownika i zakresu dat oraz przycisku generowania raportu
+        self.raport_layout = QHBoxLayout()
+        self.raport_layout.addWidget(self.pracownik_label_raport)
+        self.raport_layout.addWidget(self.pracownik_combobox_raport)
+        self.raport_layout.addWidget(self.data_poczatkowa_label)
+        self.raport_layout.addWidget(self.data_poczatkowa)
+        self.raport_layout.addWidget(self.data_koncowa_label)
+        self.raport_layout.addWidget(self.data_koncowa)
+        self.raport_layout.addWidget(self.generuj_raport_button)
+
+        self.layout2.addLayout(self.raport_layout)
+
+        self.wczytaj_zadania()
         self.wczytaj_projekty()
+        self.wczytaj_pracownikow()
+        self.wczytaj_pracownikow_raport()
 
     def dodaj_projekt(self):
         projekt_nazwa = self.dodawanie_projektu.text()
@@ -133,9 +154,9 @@ class MyWidget(QMainWindow):
         projekt = self.projekt_combobox.currentText()
         if zadanie_nazwa:
             zadanie_do_dodania = f"{zadanie_nazwa} - {projekt}"
-            self.cur.execute('''INSERT INTO tasks (name, project, status, poker_points) VALUES (?, ?, ?, 0)''',
+            self.cur_tasks.execute('''INSERT INTO tasks (name, project, status, poker_points) VALUES (?, ?, ?, 0)''',
                              (zadanie_do_dodania, projekt, "Do zrobienia"))
-            self.conn.commit()
+            self.conn_tasks.commit()
             self.wczytaj_zadania()
             self.dodawanie_zadania.clear()
         else:
@@ -149,10 +170,10 @@ class MyWidget(QMainWindow):
             name = f"{zadanie_parts[0]} - {zadanie_parts[1]}"
             projekt = zadanie_parts[1]
             if len(zadanie_parts) == 3:
-                self.cur.execute('''DELETE FROM tasks WHERE name = ? AND project = ?''', (name, projekt))
+                self.cur_tasks.execute('''DELETE FROM tasks WHERE name = ? AND project = ?''', (name, projekt))
             elif len(zadanie_parts) == 2:
-                self.cur.execute('''DELETE FROM tasks WHERE name = ? AND project IS NULL''', (name,))
-            self.conn.commit()
+                self.cur_tasks.execute('''DELETE FROM tasks WHERE name = ? AND project IS NULL''', (name,))
+            self.conn_tasks.commit()
             self.wczytaj_zadania()
         else:
             QMessageBox.warning(self, "Błąd", "Wybierz zadanie do usunięcia")
@@ -166,29 +187,28 @@ class MyWidget(QMainWindow):
             name = f"{zadanie_parts[0]} - {zadanie_parts[1]}"
             projekt = zadanie_parts[1]
             if len(zadanie_parts) == 3:
-                self.cur.execute('''UPDATE tasks SET status = ? WHERE name = ? AND project = ?''', (nowy_status, name, projekt))
+                self.cur_tasks.execute('''UPDATE tasks SET status = ? WHERE name = ? AND project = ?''', (nowy_status, name, projekt))
             elif len(zadanie_parts) == 2:
                 zadanie_nazwa = zadanie_parts[0]
-                self.cur.execute('''UPDATE tasks SET status = ? WHERE name = ? AND project IS NULL''', (nowy_status, name))
-            self.conn.commit()
+                self.cur_tasks.execute('''UPDATE tasks SET status = ? WHERE name = ? AND project IS NULL''', (nowy_status, name))
+            self.conn_tasks.commit()
             self.wczytaj_zadania()
 
     def wczytaj_projekty(self):
         self.projekt_combobox.clear()
-        self.cur.execute('''SELECT DISTINCT project FROM tasks''')
-        projekty = self.cur.fetchall()
+        self.cur_tasks.execute('''SELECT DISTINCT project FROM tasks''')
+        projekty = self.cur_tasks.fetchall()
         for projekt in projekty:
             self.projekt_combobox.addItem(projekt[0])
 
     def wczytaj_zadania(self):
-
         self.lista_zadan.clear()
         projekt = self.projekt_combobox.currentText()
 
         statuses = ["Do zrobienia", "W trakcie", "Wykonane"]
         for status in statuses:
-            self.cur.execute('''SELECT name, poker_points FROM tasks WHERE project = ? AND status = ?''', (projekt, status))
-            zadania = self.cur.fetchall()
+            self.cur_tasks.execute('''SELECT name, poker_points FROM tasks WHERE project = ? AND status = ?''', (projekt, status))
+            zadania = self.cur_tasks.fetchall()
             if zadania:
                 column_header = QListWidgetItem(status)
                 column_header.setFlags(column_header.flags() & ~QtCore.Qt.ItemIsSelectable)
@@ -207,14 +227,62 @@ class MyWidget(QMainWindow):
             name = f"{selected_task_parts[0]} - {selected_task_parts[1]}"
             projekt = selected_task_parts[1]
             poker_points = button.text() if button.isChecked() else "0"
-            self.cur.execute('''UPDATE tasks SET poker_points = ? WHERE name = ? AND project = ?''',
+            self.cur_tasks.execute('''UPDATE tasks SET poker_points = ? WHERE name = ? AND project = ?''',
                              (poker_points, name, projekt))
-            self.conn.commit()
+            self.conn_tasks.commit()
             QMessageBox.information(self, "Poker Planning",
                                     f"Zadanie: {selected_task}\n\nPunkty Poker Planning: {poker_points}")
             self.wczytaj_zadania()
         else:
             QMessageBox.warning(self, "Błąd", "Wybierz zadanie")
+
+    def wczytaj_pracownikow(self):
+        self.lista_pracownikow.setRowCount(0)
+        self.cur_employees.execute('''SELECT * FROM employees''')
+        pracownicy = self.cur_employees.fetchall()
+        for row, pracownik in enumerate(pracownicy):
+            self.lista_pracownikow.insertRow(row)
+            for col, dane in enumerate(pracownik):
+                item = QTableWidgetItem(str(dane))
+                self.lista_pracownikow.setItem(row, col, item)
+
+    def dodaj_pracownika(self):
+        imie = self.imie_input.text()
+        nazwisko = self.nazwisko_input.text()
+        if imie and nazwisko:
+            self.cur_employees.execute('''INSERT INTO employees (imie, nazwisko) VALUES (?, ?)''', (imie, nazwisko))
+            self.conn_employees.commit()
+            self.wczytaj_pracownikow()
+            self.wczytaj_pracownikow_raport()
+        else:
+            QMessageBox.warning(self, "Błąd", "Wypełnij wszystkie pola")
+
+    def usun_pracownika(self):
+        zaznaczony_wiersz = self.lista_pracownikow.currentRow()
+        if zaznaczony_wiersz != -1:
+            id_pracownika = self.lista_pracownikow.item(zaznaczony_wiersz, 0).text()
+            self.cur_employees.execute('''DELETE FROM employees WHERE id = ?''', (id_pracownika,))
+            self.conn_employees.commit()
+            self.wczytaj_pracownikow()
+            self.wczytaj_pracownikow_raport()
+        else:
+            QMessageBox.warning(self, "Błąd", "Wybierz pracownika do usunięcia")
+
+    def generuj_raport(self):
+        pracownik = self.pracownik_combobox_raport.currentText()
+        data_poczatkowa = self.data_poczatkowa.date().toString("yyyy-MM-dd")
+        data_koncowa = self.data_koncowa.date().toString("yyyy-MM-dd")
+        self.cur_tasks.execute('''SELECT * FROM time_reports WHERE employee = ? AND date BETWEEN ? AND ?''',
+                         (pracownik, data_poczatkowa, data_koncowa))
+        raport = self.cur_tasks.fetchall()
+
+    def wczytaj_pracownikow_raport(self):
+        self.pracownik_combobox_raport.clear()
+        self.cur_employees.execute('''SELECT imie, nazwisko FROM employees''')
+        pracownicy = self.cur_employees.fetchall()
+        for pracownik in pracownicy:
+            imie_nazwisko = f"{pracownik[0]} {pracownik[1]}"
+            self.pracownik_combobox_raport.addItem(imie_nazwisko)
 
 
 if __name__ == "__main__":
