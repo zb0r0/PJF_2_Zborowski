@@ -3,6 +3,7 @@ import sqlite3
 
 from PySide6 import QtGui, QtCore
 from PySide6.QtWidgets import QMainWindow, QWidget, QApplication, QVBoxLayout, QLineEdit, QPushButton, QListWidget, QMessageBox, QHBoxLayout, QLabel, QComboBox, QListWidgetItem, QRadioButton, QButtonGroup, QDateEdit, QTabWidget, QTableWidgetItem, QTableWidget
+from collections import defaultdict
 
 class MyWidget(QMainWindow):
     def __init__(self):
@@ -56,6 +57,8 @@ class MyWidget(QMainWindow):
         self.usun_zadanie_przycisk = QPushButton('Usuń zadanie')
         self.usun_zadanie_przycisk.clicked.connect(self.usun_zadanie)
 
+        self.wczytaj_projekty()
+
         self.status_label = QLabel("Status:")
         self.status_combobox = QComboBox()
         self.status_combobox.addItems(["Do zrobienia", "W trakcie", "Wykonane"])
@@ -75,10 +78,8 @@ class MyWidget(QMainWindow):
 
         # Przyciski do pokera
         self.poker_planning_label = QLabel("Poker Planning:")
-        self.poker_planning_edit = QLineEdit()
         self.poker_planning_layout = QHBoxLayout()
         self.poker_planning_layout.addWidget(self.poker_planning_label)
-        self.poker_planning_layout.addWidget(self.poker_planning_edit)
 
         self.poker_points_group = QButtonGroup()
 
@@ -99,8 +100,8 @@ class MyWidget(QMainWindow):
 
         self.layout2.addWidget(self.lista_pracownikow)
 
-        self.imie_input = QLineEdit()
-        self.nazwisko_input = QLineEdit()
+        self.imie_input = QLineEdit(placeholderText="Imie pracownika...")
+        self.nazwisko_input = QLineEdit(placeholderText="Nazwisko pracownika...")
         dodaj_pracownika_przycisk = QPushButton("Dodaj pracownika")
         dodaj_pracownika_przycisk.clicked.connect(self.dodaj_pracownika)
 
@@ -136,16 +137,91 @@ class MyWidget(QMainWindow):
 
         self.layout2.addLayout(self.raport_layout)
 
+        self.tab3 = QWidget()  # Nowa karta
+        self.central_widget.addTab(self.tab3, "Przypisywanie pracowników do projektów")
+
+        self.layout3 = QVBoxLayout()
+        self.tab3.setLayout(self.layout3)
+
+        self.pracownik_label = QLabel("Pracownik:")
+        self.pracownik_combobox = QComboBox()
+        self.projekt_label = QLabel("Projekt:")
+        self.projekt_combobox = QComboBox()
+        self.godziny_label = QLabel("Godziny pracy:")
+        self.godziny_input = QLineEdit()
+        self.data_label = QLabel("Data pracy:")
+        self.data_edit = QDateEdit()
+
+        self.dodaj_pracownika_do_projektu_przycisk = QPushButton("Dodaj godziny pracy")
+        self.dodaj_pracownika_do_projektu_przycisk.clicked.connect(self.dodaj_pracownika_do_projektu)
+
+        self.layout3.addWidget(self.pracownik_label)
+        self.layout3.addWidget(self.pracownik_combobox)
+        self.layout3.addWidget(self.projekt_label)
+        self.layout3.addWidget(self.projekt_combobox)
+        self.layout3.addWidget(self.godziny_label)
+        self.layout3.addWidget(self.godziny_input)
+        self.layout3.addWidget(self.data_label)
+        self.layout3.addWidget(self.data_edit)
+        self.layout3.addWidget(self.dodaj_pracownika_do_projektu_przycisk)
+
+        self.wczytaj_pracownikow_do_projektu()
+        self.wczytaj_projekty_do_projektu()
+
+        self.conn_time_reports = sqlite3.connect("time_reports.db")
+        self.cur_time_reports = self.conn_time_reports.cursor()
+
+        self.cur_time_reports.execute('''CREATE TABLE IF NOT EXISTS time_reports(id INTEGER PRIMARY KEY, employee TEXT, project TEXT, hours INTEGER, date TEXT)''')
+        self.conn_time_reports.commit()
+
+        # Wywołanie funkcji wczytaj_pracownikow_do_projektu w __init__
+
+
         self.wczytaj_zadania()
         self.wczytaj_projekty()
         self.wczytaj_pracownikow()
         self.wczytaj_pracownikow_raport()
+        self.wczytaj_pracownikow_do_projektu()
+        self.wczytaj_projekty_do_projektu()
+
+    def wczytaj_pracownikow_do_projektu(self):
+        self.pracownik_combobox.clear()
+        self.cur_employees.execute('''SELECT imie, nazwisko FROM employees''')
+        pracownicy = self.cur_employees.fetchall()
+        for pracownik in pracownicy:
+            imie_nazwisko = f"{pracownik[0]} {pracownik[1]}"
+            self.pracownik_combobox.addItem(imie_nazwisko)
+
+    def wczytaj_projekty_do_projektu(self):
+        self.projekt_combobox.clear()
+        self.cur_tasks.execute('''SELECT DISTINCT project FROM tasks''')
+        projekty = self.cur_tasks.fetchall()
+        for projekt in projekty:
+            self.projekt_combobox.addItem(projekt[0])
+
+    def dodaj_pracownika_do_projektu(self):
+        pracownik = self.pracownik_combobox.currentText()
+        projekt = self.projekt_combobox.currentText()
+        godziny = self.godziny_input.text()
+        data = self.data_edit.date().toString("yyyy-MM-dd")
+
+        if pracownik and projekt and godziny and data:
+            self.cur_time_reports.execute(
+                '''INSERT INTO time_reports (employee, project, hours, date) VALUES (?, ?, ?, ?)''',
+                (pracownik, projekt, godziny, data))
+            self.conn_time_reports.commit()
+            QMessageBox.information(self, "Sukces", "Pracownik został pomyślnie przypisany do projektu.")
+            self.godziny_input.clear()
+            self.data_edit.setDate(QtCore.QDate.currentDate())  # Ustawienie daty na dzisiejszą
+        else:
+            QMessageBox.warning(self, "Błąd", "Wypełnij wszystkie pola.")
 
     def dodaj_projekt(self):
         projekt_nazwa = self.dodawanie_projektu.text()
         if projekt_nazwa:
             self.projekt_combobox.addItem(projekt_nazwa)
             self.dodawanie_projektu.clear()
+            self.wczytaj_projekty()
         else:
             QMessageBox.warning(self, "Błąd", "Nazwa projektu nie może być pusta")
 
@@ -175,6 +251,7 @@ class MyWidget(QMainWindow):
                 self.cur_tasks.execute('''DELETE FROM tasks WHERE name = ? AND project IS NULL''', (name,))
             self.conn_tasks.commit()
             self.wczytaj_zadania()
+            self.wczytaj_projekty()
         else:
             QMessageBox.warning(self, "Błąd", "Wybierz zadanie do usunięcia")
 
@@ -207,7 +284,8 @@ class MyWidget(QMainWindow):
 
         statuses = ["Do zrobienia", "W trakcie", "Wykonane"]
         for status in statuses:
-            self.cur_tasks.execute('''SELECT name, poker_points FROM tasks WHERE project = ? AND status = ?''', (projekt, status))
+            self.cur_tasks.execute('''SELECT name, poker_points FROM tasks WHERE project = ? AND status = ?''',
+                                   (projekt, status))
             zadania = self.cur_tasks.fetchall()
             if zadania:
                 column_header = QListWidgetItem(status)
@@ -218,6 +296,7 @@ class MyWidget(QMainWindow):
                 for zadanie in zadania:
                     item = QListWidgetItem(f"{zadanie[0]} - {zadanie[1]}")
                     self.lista_zadan.addItem(item)
+
 
     def handle_poker_points(self, button):
         selected_item = self.lista_zadan.currentItem()
@@ -272,9 +351,26 @@ class MyWidget(QMainWindow):
         pracownik = self.pracownik_combobox_raport.currentText()
         data_poczatkowa = self.data_poczatkowa.date().toString("yyyy-MM-dd")
         data_koncowa = self.data_koncowa.date().toString("yyyy-MM-dd")
-        self.cur_tasks.execute('''SELECT * FROM time_reports WHERE employee = ? AND date BETWEEN ? AND ?''',
-                         (pracownik, data_poczatkowa, data_koncowa))
-        raport = self.cur_tasks.fetchall()
+
+        self.cur_time_reports.execute(
+            '''SELECT project, hours FROM time_reports WHERE employee = ? AND date BETWEEN ? AND ?''',
+            (pracownik, data_poczatkowa, data_koncowa))
+        raport = self.cur_time_reports.fetchall()
+
+        # Tworzenie słownika, w którym kluczem będzie nazwa projektu, a wartością suma godzin przepracowanych na projekcie
+        raport_projektow = defaultdict(int)
+        for projekt, godziny in raport:
+            raport_projektow[projekt] += godziny
+
+        # Wyświetlanie raportu
+        raport_text = f"Raport dla pracownika: {pracownik}\n"
+        raport_text += f"Data początkowa: {data_poczatkowa}, Data końcowa: {data_koncowa}\n\n"
+        raport_text += "Projekt | Suma godzin\n"
+        raport_text += "-" * 30 + "\n"
+        for projekt, suma_godzin in raport_projektow.items():
+            raport_text += f"{projekt} | {suma_godzin}\n"
+
+        QMessageBox.information(self, "Raport", raport_text)
 
     def wczytaj_pracownikow_raport(self):
         self.pracownik_combobox_raport.clear()
