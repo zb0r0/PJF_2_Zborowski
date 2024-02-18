@@ -2,7 +2,7 @@ import sys
 import sqlite3
 
 from PySide6 import QtGui, QtCore
-from PySide6.QtWidgets import QMainWindow, QWidget, QApplication, QVBoxLayout, QLineEdit, QPushButton, QListWidget, QMessageBox, QHBoxLayout, QLabel, QComboBox, QListWidgetItem
+from PySide6.QtWidgets import QMainWindow, QWidget, QApplication, QVBoxLayout, QLineEdit, QPushButton, QListWidget, QMessageBox, QHBoxLayout, QLabel, QComboBox, QListWidgetItem, QRadioButton, QButtonGroup
 
 class MyWidget(QMainWindow):
     def __init__(self):
@@ -64,11 +64,59 @@ class MyWidget(QMainWindow):
         self.poker_planning_layout.addWidget(self.poker_planning_label)
         self.poker_planning_layout.addWidget(self.poker_planning_edit)
 
-        self.poker_planning_button = QPushButton("Start Poker Planning")
-        self.poker_planning_button.clicked.connect(self.start_poker_planning)
 
-        self.layout.addLayout(self.poker_planning_layout)
-        self.layout.addWidget(self.poker_planning_button)
+        self.poker_points_group = QButtonGroup()
+
+        self.zero_points_button = QRadioButton("0")
+        self.poker_points_group.addButton(self.zero_points_button, 0)
+
+        self.half_point_button = QRadioButton("0.5")
+        self.poker_points_group.addButton(self.half_point_button, 0.5)
+
+        self.one_point_button = QRadioButton("1")
+        self.poker_points_group.addButton(self.one_point_button, 1)
+
+        self.two_points_button = QRadioButton("2")
+        self.poker_points_group.addButton(self.two_points_button, 2)
+
+        self.three_points_button = QRadioButton("3")
+        self.poker_points_group.addButton(self.three_points_button, 3)
+
+        self.five_points_button = QRadioButton("5")
+        self.poker_points_group.addButton(self.five_points_button, 5)
+
+        self.eight_points_button = QRadioButton("8")
+        self.poker_points_group.addButton(self.eight_points_button, 8)
+
+        self.thirteen_points_button = QRadioButton("13")
+        self.poker_points_group.addButton(self.thirteen_points_button, 13)
+
+        self.twenty_points_button = QRadioButton("20")
+        self.poker_points_group.addButton(self.twenty_points_button, 20)
+
+        self.forty_points_button = QRadioButton("40")
+        self.poker_points_group.addButton(self.forty_points_button, 40)
+
+        self.one_hundred_points_button = QRadioButton("100")
+        self.poker_points_group.addButton(self.one_hundred_points_button, 100)
+
+        self.poker_points_layout = QHBoxLayout()
+
+        self.poker_points_layout.addWidget(self.zero_points_button)
+        self.poker_points_layout.addWidget(self.half_point_button)
+        self.poker_points_layout.addWidget(self.one_point_button)
+        self.poker_points_layout.addWidget(self.two_points_button)
+        self.poker_points_layout.addWidget(self.three_points_button)
+        self.poker_points_layout.addWidget(self.five_points_button)
+        self.poker_points_layout.addWidget(self.eight_points_button)
+        self.poker_points_layout.addWidget(self.thirteen_points_button)
+        self.poker_points_layout.addWidget(self.twenty_points_button)
+        self.poker_points_layout.addWidget(self.forty_points_button)
+        self.poker_points_layout.addWidget(self.one_hundred_points_button)
+
+        self.layout.addLayout(self.poker_points_layout)
+
+        self.poker_points_group.buttonClicked.connect(self.handle_poker_points)
 
         self.wczytaj_projekty()
 
@@ -85,7 +133,7 @@ class MyWidget(QMainWindow):
         projekt = self.projekt_combobox.currentText()
         if zadanie_nazwa:
             zadanie_do_dodania = f"{zadanie_nazwa} - {projekt}"
-            self.cur.execute('''INSERT INTO tasks (name, project, status) VALUES (?, ?, ?)''',
+            self.cur.execute('''INSERT INTO tasks (name, project, status, poker_points) VALUES (?, ?, ?, 0)''',
                              (zadanie_do_dodania, projekt, "Do zrobienia"))
             self.conn.commit()
             self.wczytaj_zadania()
@@ -132,27 +180,6 @@ class MyWidget(QMainWindow):
         for projekt in projekty:
             self.projekt_combobox.addItem(projekt[0])
 
-    def start_poker_planning(self):
-        selected_item = self.lista_zadan.currentItem()
-        if selected_item is not None:
-            poker_points = self.poker_planning_edit.text()
-            if poker_points.strip():
-                selected_task = selected_item.text()
-                selected_task_parts = selected_task.split(" - ")
-                name = f"{selected_task_parts[0]} - {selected_task_parts[1]}"
-                projekt = selected_task_parts[1]
-                self.cur.execute('''UPDATE tasks SET poker_points = ? WHERE name = ? AND project = ?''',
-                                 (poker_points, name, projekt))
-                self.conn.commit()
-                QMessageBox.information(self, "Poker Planning",
-                                        f"Zadanie: {selected_task}\n\nPunkty Poker Planning: {poker_points}")
-                self.poker_planning_edit.clear()
-            else:
-                QMessageBox.warning(self, "Błąd", "Podaj punkty Poker Planning")
-        else:
-            QMessageBox.warning(self, "Błąd", "Wybierz zadanie")
-        self.wczytaj_zadania()
-
     def wczytaj_zadania(self):
 
         self.lista_zadan.clear()
@@ -171,6 +198,23 @@ class MyWidget(QMainWindow):
                 for zadanie in zadania:
                     item = QListWidgetItem(f"{zadanie[0]} - {zadanie[1]}")
                     self.lista_zadan.addItem(item)
+
+    def handle_poker_points(self, button):
+        selected_item = self.lista_zadan.currentItem()
+        if selected_item is not None:
+            selected_task = selected_item.text()
+            selected_task_parts = selected_task.split(" - ")
+            name = f"{selected_task_parts[0]} - {selected_task_parts[1]}"
+            projekt = selected_task_parts[1]
+            poker_points = button.text() if button.isChecked() else "0"
+            self.cur.execute('''UPDATE tasks SET poker_points = ? WHERE name = ? AND project = ?''',
+                             (poker_points, name, projekt))
+            self.conn.commit()
+            QMessageBox.information(self, "Poker Planning",
+                                    f"Zadanie: {selected_task}\n\nPunkty Poker Planning: {poker_points}")
+            self.wczytaj_zadania()
+        else:
+            QMessageBox.warning(self, "Błąd", "Wybierz zadanie")
 
 
 if __name__ == "__main__":
