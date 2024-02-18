@@ -176,9 +176,6 @@ class MyWidget(QMainWindow):
 
         # Wywołanie funkcji wczytaj_pracownikow_do_projektu w __init__
 
-
-        self.wczytaj_zadania()
-        self.wczytaj_projekty()
         self.wczytaj_pracownikow()
         self.wczytaj_pracownikow_raport()
         self.wczytaj_pracownikow_do_projektu()
