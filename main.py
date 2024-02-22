@@ -2,7 +2,8 @@ import sys
 import sqlite3
 
 from PySide6 import QtGui, QtCore
-from PySide6.QtWidgets import QMainWindow, QWidget, QApplication, QVBoxLayout, QLineEdit, QPushButton, QListWidget, QMessageBox, QHBoxLayout, QLabel, QComboBox, QListWidgetItem, QRadioButton, QButtonGroup, QDateEdit, QTabWidget, QTableWidgetItem, QTableWidget
+from PySide6.QtWidgets import (QMainWindow, QWidget, QApplication, QVBoxLayout, QLineEdit, QPushButton, QListWidget, QMessageBox,
+                               QHBoxLayout, QLabel, QComboBox, QListWidgetItem, QRadioButton, QButtonGroup, QDateEdit, QTabWidget, QTableWidgetItem, QTableWidget)
 from collections import defaultdict
 
 class MyWidget(QMainWindow):
@@ -145,8 +146,8 @@ class MyWidget(QMainWindow):
 
         self.pracownik_label = QLabel("Pracownik:")
         self.pracownik_combobox = QComboBox()
-        self.projekt_label = QLabel("Projekt:")
-        self.projekt_combobox = QComboBox()
+        self.projekt3_label = QLabel("Projekt:")
+        self.projekt3_combobox = QComboBox()
         self.godziny_label = QLabel("Godziny pracy:")
         self.godziny_input = QLineEdit()
         self.data_label = QLabel("Data pracy:")
@@ -157,16 +158,13 @@ class MyWidget(QMainWindow):
 
         self.layout3.addWidget(self.pracownik_label)
         self.layout3.addWidget(self.pracownik_combobox)
-        self.layout3.addWidget(self.projekt_label)
-        self.layout3.addWidget(self.projekt_combobox)
+        self.layout3.addWidget(self.projekt3_label)
+        self.layout3.addWidget(self.projekt3_combobox)
         self.layout3.addWidget(self.godziny_label)
         self.layout3.addWidget(self.godziny_input)
         self.layout3.addWidget(self.data_label)
         self.layout3.addWidget(self.data_edit)
         self.layout3.addWidget(self.dodaj_pracownika_do_projektu_przycisk)
-
-        self.wczytaj_pracownikow_do_projektu()
-        self.wczytaj_projekty_do_projektu()
 
         self.conn_time_reports = sqlite3.connect("time_reports.db")
         self.cur_time_reports = self.conn_time_reports.cursor()
@@ -190,11 +188,11 @@ class MyWidget(QMainWindow):
             self.pracownik_combobox.addItem(imie_nazwisko)
 
     def wczytaj_projekty_do_projektu(self):
-        self.projekt_combobox.clear()
+        self.projekt3_combobox.clear()
         self.cur_tasks.execute('''SELECT DISTINCT project FROM tasks''')
         projekty = self.cur_tasks.fetchall()
         for projekt in projekty:
-            self.projekt_combobox.addItem(projekt[0])
+            self.projekt3_combobox.addItem(projekt[0])
 
     def dodaj_pracownika_do_projektu(self):
         pracownik = self.pracownik_combobox.currentText()
@@ -218,7 +216,6 @@ class MyWidget(QMainWindow):
         if projekt_nazwa:
             self.projekt_combobox.addItem(projekt_nazwa)
             self.dodawanie_projektu.clear()
-            self.wczytaj_projekty()
         else:
             QMessageBox.warning(self, "Błąd", "Nazwa projektu nie może być pusta")
 
@@ -293,7 +290,6 @@ class MyWidget(QMainWindow):
                 for zadanie in zadania:
                     item = QListWidgetItem(f"{zadanie[0]} - {zadanie[1]}")
                     self.lista_zadan.addItem(item)
-
 
     def handle_poker_points(self, button):
         selected_item = self.lista_zadan.currentItem()
