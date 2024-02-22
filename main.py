@@ -196,7 +196,7 @@ class MyWidget(QMainWindow):
 
     def dodaj_pracownika_do_projektu(self):
         pracownik = self.pracownik_combobox.currentText()
-        projekt = self.projekt_combobox.currentText()
+        projekt = self.projekt3_combobox.currentText()
         godziny = self.godziny_input.text()
         data = self.data_edit.date().toString("yyyy-MM-dd")
 
@@ -207,7 +207,7 @@ class MyWidget(QMainWindow):
             self.conn_time_reports.commit()
             QMessageBox.information(self, "Sukces", "Pracownik został pomyślnie przypisany do projektu.")
             self.godziny_input.clear()
-            self.data_edit.setDate(QtCore.QDate.currentDate())  # Ustawienie daty na dzisiejszą
+            self.data_edit.setDate(QtCore.QDate.currentDate())
         else:
             QMessageBox.warning(self, "Błąd", "Wypełnij wszystkie pola.")
 
@@ -229,6 +229,7 @@ class MyWidget(QMainWindow):
             self.conn_tasks.commit()
             self.wczytaj_zadania()
             self.dodawanie_zadania.clear()
+            self.wczytaj_projekty_do_projektu()
         else:
             QMessageBox.warning(self, "Błąd", "Nazwa zadania nie może być pusta")
 
@@ -326,6 +327,7 @@ class MyWidget(QMainWindow):
             self.conn_employees.commit()
             self.wczytaj_pracownikow()
             self.wczytaj_pracownikow_raport()
+            self.wczytaj_pracownikow_do_projektu()
         else:
             QMessageBox.warning(self, "Błąd", "Wypełnij wszystkie pola")
 
